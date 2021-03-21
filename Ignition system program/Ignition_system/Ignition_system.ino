@@ -1,8 +1,9 @@
-int led = 13;
+int relay = 13;
+volatile byte relayState = LOW;
 boolean launched = false;
 void setup() {
   // put your setup code here, to run once:
-pinMode(12, INPUT_PULLUP);
+pinMode(3, INPUT_PULLUP);
 pinMode(13, OUTPUT);
 Serial.begin(9600);
 //start
@@ -10,10 +11,10 @@ Serial.begin(9600);
 
 void loop() {
   // put your main code here, to run repeatedly:
-delay(5000);
-int button = digitalRead(12);
+//delay(5000);
+int button = digitalRead(3);
 if (launched == 0 && button ==1){
-  digitalWrite(13, HIGH);
+  digitalWrite(relay, HIGH);
   launched = true;
   Serial.print("HIGH");
   }
