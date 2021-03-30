@@ -49,8 +49,7 @@ BLA::Matrix<3, 1> x_hat = {0.0,
                             0.0};
 
 
-BLA::Matrix<3, 1> Y = {0.0,
-                       0.0,
+BLA::Matrix<2, 1> Y = {0.0,
                        0.0};
 
 
@@ -111,8 +110,9 @@ void loop() {
 
     P = (I - K * H) * P_minus;
     
-    Y = Z - H * x_hat_minus;
+    Y = Z - (H * x_hat_minus);
     
+  //  Y = 0;
     float s,v,ac;
     
     s = Y(0);
