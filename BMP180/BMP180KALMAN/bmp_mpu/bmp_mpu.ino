@@ -12,7 +12,6 @@ Adafruit_BMP085 bmp;
 Adafruit_MPU6050 mpu;
 
 float altitude, acceleration;
-
 float q = 0.0001;
 
 // The system dynamics
@@ -28,7 +27,6 @@ BLA::Matrix<2, 3> H = {1.0, 0, 0,
 BLA::Matrix<3, 3> P = {1, 0, 0,
                         0, 1, 0, 
                         0, 0, 1};
-
 
 // Measurement error covariance
 BLA::Matrix<2, 2> R = {35.8229, 0,
@@ -48,11 +46,8 @@ BLA::Matrix<3, 1> x_hat = {0.0,
                             0.0,
                             0.0};
 
-
 BLA::Matrix<2, 1> Y = {0.0,
                        0.0};
-
-
 
 void setup(void) {
   Serial.begin(115200);
@@ -96,7 +91,6 @@ void loop() {
     altitude = bmp.readAltitude(seaLevelPressure_hPa * 100);
   acceleration = a.acceleration.z;
 
-
     BLA::Matrix<2, 1> Z = {altitude,
                         acceleration};
 
@@ -107,11 +101,8 @@ void loop() {
     BLA::Matrix<3, 2> K  = P_minus * (~H) * ((H * P_minus * (~H) + R)).Inverse();
 
     x_hat = x_hat_minus + K * (Z - (H * x_hat_minus));
-
     P = (I - K * H) * P_minus;
-    
     Y = Z - (H * x_hat_minus);
-    
   //  Y = 0;
     float s,v,ac;
     
@@ -124,6 +115,4 @@ void loop() {
     Serial.println(ac);Serial.println("\t");
 
     delay(500);
-
-
 }
