@@ -14,6 +14,7 @@ int FilterWeight = 5;
 
 ExponentialFilter<float> ADCFilter(FilterWeight, 0);
 
+int counter = 0;
 
 #define WINDOW_SIZE 3
 
@@ -70,7 +71,7 @@ void setup() {
     while (1) {}
   }
 }
-
+float READING;
 //moving average
 float mav3() {
   SUM = SUM - READINGS[INDEX];       // Remove the oldest entry from the sum
@@ -122,7 +123,7 @@ float expofilter() {
 float runmedian()
 {
   float x = bmp.readAltitude();
-  
+      
   //Serial.print(x);
   
 
@@ -208,7 +209,13 @@ float kalman(){
   }
 void loop(){
 //Serial.println("Real altitude = ");
-  Serial.print(bmp.readAltitude());
+
+  VALUE = bmp.readAltitude();
+  
+  Serial.print(counter);
+  Serial.print(", ");
+  
+  Serial.print(VALUE);
   Serial.print(", ");
   Serial.print(mav3());
   
@@ -233,10 +240,11 @@ void loop(){
   Serial.print(", ");
   Serial.println(kalman());
 
-  Serial.println("");
+  
 
+  counter++;
 
-  delay(500);
+  delay(10);
 }
 
 
