@@ -1,3 +1,4 @@
+#include "FS.h"
 #include <SD.h>
 #include <SPI.h>
 #include <Wire.h>
@@ -16,7 +17,7 @@ Adafruit_BMP085 bmp;
 Adafruit_MPU6050 mpu;
 
 #define seaLevelPressure_hPa 1024
-const int chipSelect = 53;
+const int chipSelect = 5;
 
 int counter = 0;
 long count = 0;
@@ -81,7 +82,7 @@ void loop() {
     velocity = get_velocity();
     acceleration = a.acceleration.z;
     kalmanAltitude = get_kalmanAltitude();
-    Write_SDcard(counter, altitude, kalmanAltitude, velocity, acceleration, isApogee1, isApogee2, isApogee3);
+    Write_SDcard(SD, counter, altitude, kalmanAltitude, velocity, acceleration, isApogee1, isApogee2, isApogee3);
     delay(50);
     counter ++;
 }
@@ -120,8 +121,8 @@ void detectApogee3(float acceleration){
     }
 }
 
-void startWriting() {
-    File dataFile = SD.open("Altitude.txt", FILE_WRITE);
+void startWriting(fs::FS &fs) {
+    File dataFile = SD.open("/Altitude.txt", FILE_WRITE);
     if (dataFile) {
         dataFile.println("Altitude"); //Write the first row of the excel file
         dataFile.println(); //End of Row move to next row
@@ -129,8 +130,8 @@ void startWriting() {
     }
 }
 
-void Write_SDcard(int counter, float altitude, float kalmanAltitude, float velocity, float acceleration, bool STATUS1, bool STATUS2, bool STATUS3) {
-    File dataFile = SD.open("Altitude.txt", FILE_WRITE);
+void Write_SDcard(fs::FS &fs, int counter, float altitude, float kalmanAltitude, float velocity, float acceleration, bool STATUS1, bool STATUS2, bool STATUS3) {
+    File dataFile = fs.open("/Altitude.txt", FILE_APPEND);
     if (dataFile) {
         dataFile.print(counter);
         dataFile.print(" , ");
@@ -181,7 +182,7 @@ void init_components(){
         Serial.println("Wiring is correct and a card is present.");
     }
     Serial.println("initialization done.");
-    startWriting();
+    startWriting(SD);
 }
 
 
@@ -196,7 +197,6 @@ float get_acceleration(){
 float get_kalmanAltitude(){
 
 }
-
 
 
 
