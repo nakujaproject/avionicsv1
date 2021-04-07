@@ -91,10 +91,7 @@ void loop() {
     altitude = bmp.readAltitude(seaLevelPressure_hPa * 100);
   acceleration = a.acceleration.z;
 
-<<<<<<< HEAD:BMP180KALMAN/bmp_mpu/bmp_mpu.ino
     //Measurement matrix
-=======
->>>>>>> f758ab714be40a135fd29af27816c58ef4deb758:BMP180/BMP180KALMAN/bmp_mpu/bmp_mpu.ino
     BLA::Matrix<2, 1> Z = {altitude,
                         acceleration};
     //Predicted state estimate
@@ -106,7 +103,6 @@ void loop() {
     //Kalman gain
     BLA::Matrix<3, 2> K  = P_minus * (~H) * ((H * P_minus * (~H) + R)).Inverse();
 
-<<<<<<< HEAD:BMP180KALMAN/bmp_mpu/bmp_mpu.ino
     //Measurement residual
     Y = Z - (H * x_hat_minus);
     
@@ -116,15 +112,9 @@ void loop() {
     //Updated estimate covariance
     P = (I - K * H) * P_minus;
 
-    
-    
-    
-=======
-    x_hat = x_hat_minus + K * (Z - (H * x_hat_minus));
-    P = (I - K * H) * P_minus;
     Y = Z - (H * x_hat_minus);
->>>>>>> f758ab714be40a135fd29af27816c58ef4deb758:BMP180/BMP180KALMAN/bmp_mpu/bmp_mpu.ino
-  //  Y = 0;
+    
+    //  Y = 0;
     float s,v,ac, reac, res;
     
     s = x_hat(0);
@@ -132,12 +122,8 @@ void loop() {
     ac = x_hat(2);
     res = Z(0);
     
-<<<<<<< HEAD:BMP180KALMAN/bmp_mpu/bmp_mpu.ino
     reac = Z(1);
-    
-    //Serial.print(count);
-    //Serial.print(", ");
-    
+
     Serial.print(res);
     Serial.print(", ");
     Serial.print(s);
@@ -145,16 +131,7 @@ void loop() {
     Serial.print(reac);
     Serial.print(", ");
     Serial.println(ac);
-    //Serial.print(ac);Serial.print("\t");
-    //Serial.println(reac);Serial.println("\t");
+
     delay(20);
-
-count ++;
-=======
-    Serial.print(s);Serial.print("\t");
-    Serial.print(v);Serial.print("\t");
-    Serial.println(ac);Serial.println("\t");
-
-    delay(500);
->>>>>>> f758ab714be40a135fd29af27816c58ef4deb758:BMP180/BMP180KALMAN/bmp_mpu/bmp_mpu.ino
+    count ++;
 }
