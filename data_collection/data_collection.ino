@@ -79,11 +79,11 @@ if (!SD.begin(SD_CS)) {
   return; // init failed
 }
 
-File file = SD.open("/data1.txt");
+File file = SD.open("/data2.txt");
   if(!file) {
     Serial.println("File doens't exist");
     Serial.println("Creating file...");
-    writeFile(SD, "/data1.txt", "Altitude, Velocity, Acceleration \r\n");
+    writeFile(SD, "/data2.txt", "Index, Altitude, Velocity, Acceleration, Rawalt, Rawac  \r\n");
   }
   else {
     Serial.println("File already exists");  
@@ -120,7 +120,7 @@ Serial.println("Adafruit MPU6050 test!");
   }
 
 }
-
+int count = 0;
 void loop() {
   // put your main code here, to run repeatedly:
 
@@ -167,8 +167,10 @@ sensors_event_t a, g, temp;
     res = Z(0);
   
     reac = Z(1);
-logSDCard();
-delay(20);
+    logSDCard();
+    count++;
+    delay(1);
+
 }
 
 
@@ -177,10 +179,10 @@ delay(20);
 // Write the sensor readings on the SD card
 void logSDCard() {
   
-  dataMessage = String(s) + "," + String(v) + "," + String(ac) + "," +  "\r\n";
+  dataMessage = String(count) + "," + String(s) + "," + String(v) + "," + String(ac) + "," + String(res) + "," + String(reac) + ","  "\r\n";
   Serial.print("Save data: ");
   Serial.println(dataMessage);
-  appendFile(SD, "/data1.txt", dataMessage.c_str());
+  appendFile(SD, "/data2.txt", dataMessage.c_str());
 }
 
 // Write to the SD card (DON'T MODIFY THIS FUNCTION)
