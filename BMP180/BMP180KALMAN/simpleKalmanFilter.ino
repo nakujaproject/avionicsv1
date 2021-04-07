@@ -24,9 +24,9 @@ void setup() {
 void loop() {
     Serial.print(count);
     Serial.print(", ");
-    Serial.print(bmp.readAltitude(seaLevelPressure_hPa * 100));
+    Serial.print(bmp.readAltitude());
     Serial.print(", ");
-    float estimated_altitude = pressureKalmanFilter.updateEstimate(bmp.readAltitude(seaLevelPressure_hPa * 100));
+    float estimated_altitude = pressureKalmanFilter.updateEstimate(bmp.readAltitude());
     Serial.print(estimated_altitude);
     
     Serial.println();
