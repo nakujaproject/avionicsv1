@@ -30,7 +30,7 @@ bool isApogee2 = false;
 bool isApogee3 = false;
 
 float q = 0.0001;
-
+// The system dynamics
 BLA::Matrix<3, 3> A = {1.0, 0.05, 0.00125,
                         0, 1.0, 0.05,
                         0, 0, 1};
@@ -45,8 +45,8 @@ BLA::Matrix<3, 3> P = {1, 0, 0,
                         0, 0, 1};
 
 // Measurement error covariance
-BLA::Matrix<2, 2> R = {35.8229, 0,
-                        0, 0.012};
+BLA::Matrix<2, 2> R = {0.5, 0,
+                        0, 0.0012};
 
 // Process noise covariance
 BLA::Matrix<3, 3> Q = {q, 0, 0,
@@ -58,14 +58,13 @@ BLA::Matrix<3, 3> I = {1, 0, 0,
                         0, 1, 0,
                         0, 0, 1};
 
-BLA::Matrix<3, 1> x_hat = {0.0,
+BLA::Matrix<3, 1> x_hat = {1530.0,
                             0.0,
                             0.0};
 
 BLA::Matrix<2, 1> Y = {0.0,
                        0.0};
-
-
+                       
 void setup() {
     Serial.begin(115200);
     delay(2000);
@@ -80,9 +79,11 @@ void loop() {
 
     altitude = bmp.readAltitude(seaLevelPressure_hPa * 100);
     velocity = get_velocity();
-    acceleration = a.acceleration.z;
+    ax = a.acceleration.x;
+    ax = a.acceleration.y;
+    ax = a.acceleration.z;
     kalmanAltitude = get_kalmanAltitude();
-    Write_SDcard(SD, counter, altitude, kalmanAltitude, velocity, acceleration, isApogee1, isApogee2, isApogee3);
+    Write_SDcard(SD, counter, altitude, kalmanAltitude, velocity, ax, ay, az, isApogee1, isApogee2, isApogee3);
     delay(50);
     counter ++;
 }
@@ -130,7 +131,7 @@ void startWriting(fs::FS &fs) {
     }
 }
 
-void Write_SDcard(fs::FS &fs, int counter, float altitude, float kalmanAltitude, float velocity, float acceleration, bool STATUS1, bool STATUS2, bool STATUS3) {
+void Write_SDcard(fs::FS &fs, int counter, float altitude, float kalmanAltitude, float velocity, float ax, float ay, float az, bool STATUS1, bool STATUS2, bool STATUS3) {
     File dataFile = fs.open("/Altitude.txt", FILE_APPEND);
     if (dataFile) {
         dataFile.print(counter);
@@ -141,7 +142,11 @@ void Write_SDcard(fs::FS &fs, int counter, float altitude, float kalmanAltitude,
         dataFile.print(", ");
         dataFile.print(velocity);
         dataFile.print(", ");
-        dataFile.print(acceleration);
+        dataFile.print(ax);
+        dataFile.print(", ");
+        dataFile.print(ay);
+        dataFile.print(", ");
+        dataFile.print(az);
         dataFile.print(", ");
         dataFile.print(STATUS1);
         dataFile.print(", ");
