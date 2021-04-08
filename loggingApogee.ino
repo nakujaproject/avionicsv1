@@ -86,6 +86,8 @@ void loop() {
     Write_SDcard(SD, counter, altitude, kalmanAltitude, velocity, ax, ay, az, isApogee1, isApogee2, isApogee3);
     delay(50);
     counter ++;
+
+    
 }
 
 
