@@ -17,21 +17,21 @@ float p_temp = 0;
 
 
 void setup() {
-  // open a serial connection to display values
-  Serial.begin(9600);
-  if (!bmp.begin()) {
-    Serial.println("Could not find a valid BMP085 sensor, check wiring!");
-    while (1) {}
-  }
+	// open a serial connection to display values
+	Serial.begin(9600);
+	if (!bmp.begin()) {
+		Serial.println("Could not find a valid BMP085 sensor, check wiring!");
+		while (1) {}
+	}
 }
 
 void loop() {
-  altitude = bmp.readAltitude(102400);
-  estimated_altitude = singleVarKalmanCal(altitude);
-  Serial.print(altitude);
-  Serial.print(" , ");
-  Serial.println(estimated_altitude);
-  delay(20);
+	altitude = bmp.readAltitude(102400);
+	estimated_altitude = singleVarKalmanCal(altitude);
+	Serial.print(altitude);
+	Serial.print(" , ");
+	Serial.println(estimated_altitude);
+	delay(20);
 }
 
 //singleVarKalmanCal() - Calculates new Kalman values from float value "altitude"

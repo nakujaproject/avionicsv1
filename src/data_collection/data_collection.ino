@@ -114,7 +114,6 @@ void loop() {
 	reac = Z(1);
 
 	logSDCard();
-	Write_SDcard(SD, counter, altitude, kalmanAltitude, velocity, ax, ay, az, isApogee1, isApogee2, isApogee3);
 	counter++;
 	delay(50);
 
@@ -124,10 +123,10 @@ void loop() {
 // Write the sensor readings on the SD card
 void logSDCard() {
   
-  dataMessage = String(count) + "," + String(s) + "," + String(v) + "," + String(ac) + "," + String(res) + "," + String(reac) + ","  "\r\n";
+  dataMessage = String(count) + "," + String(altitude) + "," + String(s) + "," + String(v) + "," + String(ac) + "," + String(ax) + "," + String(ay) + "," + String(az)  + "," + String(res) + "," + String(reac) + "," + String(isApogee1) + "," + String(isApogee2) + "," + String(isApogee3) + ","  "\r\n";
   Serial.print("Save data: ");
   Serial.println(dataMessage);
-  appendFile(SD, "/data2.txt", dataMessage.c_str());
+  appendFile(SD, "/loggedData.txt", dataMessage.c_str());
 }
 
 // Write to the SD card (DON'T MODIFY THIS FUNCTION)
@@ -165,7 +164,6 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
 }
 
 
-
 void detectApogee1(float altitude) {
      //detect apogee
     if (altitude > liftoffAltitude) {
@@ -200,52 +198,17 @@ void detectApogee3(float acceleration){
 }
 
 void startWriting(fs::FS &fs) {
-    File dataFile = SD.open("/Altitude.txt", FILE_WRITE);
-    if (dataFile) {
-        dataFile.println("Altitude"); //Write the first row of the excel file
-        dataFile.println(); //End of Row move to next row
-        dataFile.close();
-    }
 
-		File file = SD.open("/data2.txt");
+    File file = SD.open("/loggedData.txt");
 	if(!file) {
 		Serial.println("File doens't exist");
 		Serial.println("Creating file...");
-		writeFile(SD, "/data2.txt", "Index, Altitude, Velocity, Acceleration, Rawalt, Rawac  \r\n");
+		writeFile(SD, "/loggedData.txt", "Index, Altitude, kalmanAltitude, kalmanVelocity, kalmanAcceleration, ax, ay, az, res, reac, isApogee1, isApogee2, isApogee3  \r\n");
 	}
 	else {
 		Serial.println("File already exists");  
 	}
 	file.close();
-}
-
-void Write_SDcard(fs::FS &fs, int counter, float altitude, float kalmanAltitude, float velocity, float ax, float ay, float az, bool STATUS1, bool STATUS2, bool STATUS3) {
-    File dataFile = fs.open("/Altitude.txt", FILE_APPEND);
-    if (dataFile) {
-        dataFile.print(counter);
-        dataFile.print(" , ");
-        dataFile.print(altitude);
-        dataFile.print(", ");
-        dataFile.print(kalmanAltitude);
-        dataFile.print(", ");
-        dataFile.print(velocity);
-        dataFile.print(", ");
-        dataFile.print(ax);
-        dataFile.print(", ");
-        dataFile.print(ay);
-        dataFile.print(", ");
-        dataFile.print(az);
-        dataFile.print(", ");
-        dataFile.print(STATUS1);
-        dataFile.print(", ");
-        dataFile.print(STATUS2);
-        dataFile.print(", ");
-        dataFile.println(STATUS3);
-        dataFile.close(); //Close the file
-    }
-    else {
-        Serial.println("SD card writing failed");
-    }
 }
 
 void init_components(){
@@ -282,9 +245,6 @@ void init_components(){
 		Serial.println("No SD card attached");
 		return;
 	}
-
-
-
 	mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
 	mpu.setGyroRange(MPU6050_RANGE_500_DEG);
 	mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
