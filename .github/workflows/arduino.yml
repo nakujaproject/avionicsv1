@@ -15,7 +15,6 @@ jobs:
         with:
           library-manager: update
           # compliance: strict
-          project-type: all
           recursive: true
           verbose: true
       
