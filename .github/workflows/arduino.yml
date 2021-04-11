@@ -1,0 +1,27 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: arduino/arduino-lint-action@v1
+        with:
+          library-manager: update
+          compliance: strict
+          project-type: all
+          recursive: true
+          verbose: true
+      
+      - name: Compile all examples
+        uses: ArminJo/arduino-test-compile@master
+        with:
+          arduino-board-fqbn: esp32:esp32:lolin32
+          required-libraries: ESP32Servo, Adafruit_MPU6050, Adafruit_Sensor, Wire.h, Adafruit_BMP085, BasicLinearAlgebra, RunningMedian, MegunoLink, SimpleKalmanFilter, Filter, Adafruit_BMP280, SPI, MPU6050_tockn, Servo, SD
+          platform-default-url: https://dl.espressif.com/dl/package_esp32_index.json
