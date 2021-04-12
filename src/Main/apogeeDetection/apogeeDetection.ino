@@ -7,7 +7,7 @@
 // With the acceleration somewhat close to 0g, start a safety countdown so that if the lower acceleration threshold is never hit, an apogee event will still occur.
 // As a final fail safe: If the acceleration is greater than 1g again and we’re looking for apogee, fire the apogee event because we failed to detect apogee entirely.
 float liftoffAltitude, prevAltitude, apogeeAltitude;
-int measures;
+int measures = 5;
 bool isApogee = false;
 
 void detectApogee1(float altitude) {
@@ -20,8 +20,7 @@ void detectApogee1(float altitude) {
                 isApogee = true;
             }
             else {
-                prevAltitude = altitude;
-                measures = 5;
+                prevAltitude = altitude;    
             }
         }
     }
