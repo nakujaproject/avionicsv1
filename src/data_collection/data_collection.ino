@@ -1,4 +1,4 @@
-#include "FS.h"
+      #include "FS.h"
 #include <SD.h>
 #include <SPI.h>
 #include <Wire.h>
@@ -24,9 +24,9 @@ String dataMessage;
 int counter = 0;
 long count = 0;
 
-float altitude, velocity, ax, ay, az, kalmanAltitude;
+float altitude, velocity, acceleration, ax, ay, az, kalmanAltitude;
 float liftoffAltitude, prevAltitude, apogeeAltitude;
-int measures;
+int measures = 5;
 bool isApogee1 = false;
 bool isApogee2 = false;
 bool isApogee3 = false;
@@ -109,9 +109,15 @@ void loop() {
 	s = x_hat(0);
 	v = x_hat(1);
 	ac = x_hat(2);
-	
+
+
+  
 	res = Z(0);
 	reac = Z(1);
+
+  detectApogee1(s);
+  detectApogee2(v);
+  detectApogee3(ac);
 
 	logSDCard();
 	counter++;
@@ -175,7 +181,7 @@ void detectApogee1(float altitude) {
             }
             else {
                 prevAltitude = altitude;
-                measures = 5;
+                
             }
         }
     }
@@ -262,4 +268,3 @@ float get_acceleration(){
 float get_kalmanAltitude(){
 
 }
-
