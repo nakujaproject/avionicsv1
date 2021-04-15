@@ -1,5 +1,6 @@
 {
-    "configuration": "upload_method=serialMethod,cpu_speed=speed_72mhz,opt=osstd",
-    "board": "stm32duino:STM32F1:genericSTM32F103C6",
-    "port": "COM7"
+    "configuration": "FlashFreq=80,PartitionScheme=default,CPUFreq=240,UploadSpeed=115200",
+    "board": "esp32:esp32:lolin32",
+    "port": "COM7",
+    "sketch": "src\\data_collection\\data_collection.ino"
 }
