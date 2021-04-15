@@ -1,5 +1,4 @@
-Altitude
-
+Index, RawAltitude, KalmanAltitude, ax, ay, az, Acceleration, isApogee1, isApogee2, isApogee3
 0 , 1566.97, 1554.67, 1.70, 4.99, 0.59, 9.33, 0, 0, 0
 1 , 1567.93, 1560.07, 3.19, 5.18, 0.66, 8.96, 0, 0, 0
 2 , 1567.93, 1562.51, 4.65, 5.97, 0.02, 9.88, 0, 0, 0
