@@ -1,4 +1,4 @@
-Index, Altitude, Velocity, Acceleration, Rawalt, Rawac  
+Index, Altitude, Velocity, Acceleration, Rawalt, Rawac, isApogee1, isApogee2, isApogee3  
 0,1553.65,1.70,0.00,0.00,10.35,0,0,0
 1,1558.81,3.21,0.00,0.00,10.36,0,0,0
 2,1561.19,4.68,0.00,0.00,10.35,0,0,0
