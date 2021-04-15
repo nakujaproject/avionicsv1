@@ -1,4 +1,4 @@
-      #include "FS.h"
+#include "FS.h"
 #include <SD.h>
 #include <SPI.h>
 #include <Wire.h>
@@ -9,10 +9,6 @@
 
 using namespace BLA;
 
-// We have three scenarios:
-// 1. When we start decreasing altitude
-// 2. When we reach 0 vertical velocity
-// 3. When leaves - 9.8 
 Adafruit_BMP085 bmp;
 Adafruit_MPU6050 mpu;
 
@@ -22,15 +18,16 @@ const int SD_CS = 5;
 String dataMessage;
 
 int counter = 0;
-long count = 0;
 
 float altitude, velocity, acceleration, ax, ay, az, kalmanAltitude;
 float liftoffAltitude, prevAltitude, apogeeAltitude;
-int measures = 5;
+int apogeeCounter = 0;
+int liftoffcounter = 0;
+bool isLaunch = false;
 bool isApogee1 = false;
 bool isApogee2 = false;
 bool isApogee3 = false;
-
+unsigned long currentMillis, startMillis, duration;
 
 float q = 0.0001;
 
@@ -72,6 +69,16 @@ BLA::Matrix<2, 1> Y = {0.0,
                        0.0};
 
 
+void init_components();
+void logSDCard();
+void writeFile(fs::FS &fs, const char * path, const char * message);
+void appendFile(fs::FS &fs, const char * path, const char * message);
+void detectLiftOff(float altitude);
+void detectApogee1(float altitude);
+void detectApogee2(float velocity, long time);
+void detectApogee3(float acceleration, long time);
+void startWriting(fs::FS &fs);
+
 void setup() {
     Serial.begin(115200);
     delay(2000);
@@ -80,56 +87,53 @@ void setup() {
 }
 
 void loop() {
-	// put your main code here, to run repeatedly:
+  currentMillis = millis();
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
 
-	sensors_event_t a, g, temp;
-	mpu.getEvent(&a, &g, &temp);
+  altitude = bmp.readAltitude(seaLevelPressure_hPa * 100);
+  ax = a.acceleration.x;
+  ay = a.acceleration.y;
+  az = a.acceleration.z;
 
-	altitude = bmp.readAltitude(seaLevelPressure_hPa * 100);
-	az = a.acceleration.z;
+  //Measurement matrix
+  BLA::Matrix<2, 1> Z = {altitude,
+              az};
+  //Predicted state estimate
+  BLA::Matrix<3, 1> x_hat_minus = A * x_hat;
+  //Predicted estimate covariance
+  BLA::Matrix<3, 3> P_minus = A * P * (~A) + Q;
+  //Kalman gain
+  BLA::Matrix<3, 2> K  = P_minus * (~H) * ((H * P_minus * (~H) + R)).Inverse();
+  //Measurement residual
+  Y = Z - (H * x_hat_minus);
+  //Updated state estimate
+  x_hat = x_hat_minus + K * Y;
+  //Updated estimate covariance
+  P = (I - K * H) * P_minus;
+  Y = Z - (H * x_hat_minus);
 
-	//Measurement matrix
-
-	BLA::Matrix<2, 1> Z = {altitude,
-							az};
-	//Predicted state estimate
-	BLA::Matrix<3, 1> x_hat_minus = A * x_hat;
-	//Predicted estimate covariance
-	BLA::Matrix<3, 3> P_minus = A * P * (~A) + Q;
-	//Kalman gain
-	BLA::Matrix<3, 2> K  = P_minus * (~H) * ((H * P_minus * (~H) + R)).Inverse();
-	//Measurement residual
-	Y = Z - (H * x_hat_minus);
-	//Updated state estimate
-	x_hat = x_hat_minus + K * Y;
-	//Updated estimate covariance
-	P = (I - K * H) * P_minus;
-	Y = Z - (H * x_hat_minus);
-
-	s = x_hat(0);
-	v = x_hat(1);
-	ac = x_hat(2);
-
-
+  s = x_hat(0);
+  v = x_hat(1);
+  ac = x_hat(2);
   
-	res = Z(0);
-	reac = Z(1);
+  duration = currentMillis - startMillis;
 
+  detectLiftOff(s);
   detectApogee1(s);
-  detectApogee2(v);
-  detectApogee3(ac);
+  detectApogee2(v, duration);
+  detectApogee3(ac, duration);
 
-	logSDCard();
-	counter++;
-	delay(50);
+  logSDCard();
+  counter++;
+  delay(50);
 
 }
 
 
 // Write the sensor readings on the SD card
 void logSDCard() {
-  
-  dataMessage = String(count) + "," + String(altitude) + "," + String(s) + "," + String(v) + "," + String(ac) + "," + String(ax) + "," + String(ay) + "," + String(az)  + "," + String(res) + "," + String(reac) + "," + String(isApogee1) + "," + String(isApogee2) + "," + String(isApogee3) + ","  "\r\n";
+  dataMessage = String(counter) + "," + String(altitude) + "," + String(s) + "," + String(v) + "," + String(ac) + "," + String(ax) + "," + String(ay) + "," + String(az)  + "," + String(isLaunch) + "," + String(isApogee1) + "," + String(isApogee2) + "," + String(isApogee3) + ","  "\r\n";
   Serial.print("Save data: ");
   Serial.println(dataMessage);
   appendFile(SD, "/loggedData.txt", dataMessage.c_str());
@@ -142,7 +146,7 @@ void writeFile(fs::FS &fs, const char * path, const char * message) {
   File file = fs.open(path, FILE_WRITE);
   if(!file) {
     Serial.println("Failed to open file for writing");
-    return;
+  return;
   }
   if(file.print(message)) {
     Serial.println("File written");
@@ -169,52 +173,69 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
   file.close();
 }
 
+void detectLiftOff(float altitude){
+  if (liftoffcounter == 3){
+    isLaunch = true;
+    startMillis = millis();
+  }
+  if (altitude > prevAltitude ) {
+    liftoffcounter = liftoffcounter + 1;
+  }
+  else {
+    liftoffcounter = 0;
+  }
+  prevAltitude = altitude;
+}
+
 
 void detectApogee1(float altitude) {
-     //detect apogee
+  if (isApogee1 == false){
     if (altitude > liftoffAltitude) {
-        if (altitude < prevAltitude ) {
-            measures -= 1;
-            if (measures == 0) {
-                apogeeAltitude = altitude;
-                isApogee1 = true;
-            }
-            else {
-                prevAltitude = altitude;
-                
-            }
-        }
+      if (apogeeCounter == 3){
+        isApogee1 = true;
+      }
+      if (altitude < prevAltitude ) {
+        apogeeCounter = apogeeCounter + 1;
+      }
+      else {
+        apogeeCounter = 0;
+      }
     }
+    prevAltitude = altitude;
+  }
 }
-
-void detectApogee2(float velocity){
-    if (velocity < 0){
+void detectApogee2(float velocity, long time){
+  if(isApogee2 == false){
+    if (time > 2000){
+      if ((velocity <= 1) && (velocity >= -1)){
         isApogee2 = true;
-    }
+      }
+    }   
+  }
 }
 
-void detectApogee3(float acceleration){
-    bool isUnder = false;
-    if (acceleration < 0){
-        isUnder = true;
-    }
-    if ((acceleration > 0) && (isUnder == true)) {
+void detectApogee3(float acceleration, long time){
+  if(isApogee3 == false){
+    if (time >= 2000){
+      if ((acceleration <= 1) && (acceleration >= -1)){
         isApogee3 = true;
+      }
     }
+  }
 }
 
 void startWriting(fs::FS &fs) {
 
     File file = SD.open("/loggedData.txt");
-	if(!file) {
-		Serial.println("File doens't exist");
-		Serial.println("Creating file...");
-		writeFile(SD, "/loggedData.txt", "Index, Altitude, kalmanAltitude, kalmanVelocity, kalmanAcceleration, ax, ay, az, res, reac, isApogee1, isApogee2, isApogee3  \r\n");
-	}
-	else {
-		Serial.println("File already exists");  
-	}
-	file.close();
+  if(!file) {
+    Serial.println("File doens't exist");
+    Serial.println("Creating file...");
+    writeFile(SD, "/loggedData.txt", "Index, Altitude, kalmanAltitude, kalmanVelocity, kalmanAcceleration, ax, ay, az, res, reac, isApogee1, isApogee2, isApogee3  \r\n");
+  }
+  else {
+    Serial.println("File already exists");  
+  }
+  file.close();
 }
 
 void init_components(){
@@ -246,25 +267,12 @@ void init_components(){
     Serial.println("initialization done.");
     startWriting(SD);
 
-	uint8_t cardType = SD.cardType();
-	if(cardType == CARD_NONE) {
-		Serial.println("No SD card attached");
-		return;
-	}
-	mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-	mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-	mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
-}
-
-
-float get_velocity(){
-    return velocity;
-}
-
-float get_acceleration(){
-    return acceleration;
-}
-
-float get_kalmanAltitude(){
-
+  uint8_t cardType = SD.cardType();
+  if(cardType == CARD_NONE) {
+    Serial.println("No SD card attached");
+    return;
+  }
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
 }
