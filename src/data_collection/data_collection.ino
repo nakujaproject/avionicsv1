@@ -20,7 +20,8 @@ String dataMessage;
 int counter = 0;
 
 float altitude, velocity, acceleration, ax, ay, az, kalmanAltitude;
-float liftoffAltitude, prevAltitude, apogeeAltitude;
+float liftoffAltitude, apogeeAltitude;
+int prevAltitude = 2000;
 int apogeeCounter = 0;
 int liftoffcounter = 0;
 bool isLaunch = false;
@@ -34,8 +35,8 @@ float q = 0.0001;
 float s,v,ac, reac, res;
 
 // The system dynamics
-BLA::Matrix<3, 3> A = {1.0, 0.05, 0.00125,
-                        0, 1.0, 0.05,
+BLA::Matrix<3, 3> A = {1.0, 0.1, 0.01,
+                        0, 1.0, 0.1,
                         0, 0, 1};
 
 // Relationship between measurement and states
@@ -48,8 +49,8 @@ BLA::Matrix<3, 3> P = {1, 0, 0,
                         0, 0, 1};
 
 // Measurement error covariance
-BLA::Matrix<2, 2> R = {0.5, 0,
-                        0, 0.0012};
+BLA::Matrix<2, 2> R = {0.25, 0,
+                        0, 0.888};
 
 // Process noise covariance
 BLA::Matrix<3, 3> Q = {q, 0, 0,
@@ -61,7 +62,7 @@ BLA::Matrix<3, 3> I = {1, 0, 0,
                         0, 1, 0,
                         0, 0, 1};
 
-BLA::Matrix<3, 1> x_hat = {1530.0,
+BLA::Matrix<3, 1> x_hat = {1550.0,
                             0.0,
                             0.0};
 
@@ -94,11 +95,11 @@ void loop() {
   altitude = bmp.readAltitude(seaLevelPressure_hPa * 100);
   ax = a.acceleration.x;
   ay = a.acceleration.y;
-  az = a.acceleration.z;
+  az = -1 * a.acceleration.z;
 
   //Measurement matrix
   BLA::Matrix<2, 1> Z = {altitude,
-              az};
+                          az};
   //Predicted state estimate
   BLA::Matrix<3, 1> x_hat_minus = A * x_hat;
   //Predicted estimate covariance
@@ -126,6 +127,10 @@ void loop() {
 
   logSDCard();
   counter++;
+  Serial.print(altitude);  
+  Serial.print(" ");
+   Serial.println(s);
+    
   delay(50);
 
 }
@@ -174,9 +179,11 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
 }
 
 void detectLiftOff(float altitude){
+  if (currentMillis >= 10000){
   if (liftoffcounter == 3){
     isLaunch = true;
     startMillis = millis();
+    liftoffAltitude = altitude;
   }
   if (altitude > prevAltitude ) {
     liftoffcounter = liftoffcounter + 1;
@@ -186,9 +193,11 @@ void detectLiftOff(float altitude){
   }
   prevAltitude = altitude;
 }
+}
 
 
 void detectApogee1(float altitude) {
+  if (isLaunch == true){
   if (isApogee1 == false){
     if (altitude > liftoffAltitude) {
       if (apogeeCounter == 3){
@@ -203,8 +212,9 @@ void detectApogee1(float altitude) {
     }
     prevAltitude = altitude;
   }
-}
+}}
 void detectApogee2(float velocity, long time){
+    if (isLaunch == true){
   if(isApogee2 == false){
     if (time > 2000){
       if ((velocity <= 1) && (velocity >= -1)){
@@ -213,8 +223,9 @@ void detectApogee2(float velocity, long time){
     }   
   }
 }
-
+}
 void detectApogee3(float acceleration, long time){
+    if (isLaunch == true){
   if(isApogee3 == false){
     if (time >= 2000){
       if ((acceleration <= 1) && (acceleration >= -1)){
@@ -223,7 +234,7 @@ void detectApogee3(float acceleration, long time){
     }
   }
 }
-
+}
 void startWriting(fs::FS &fs) {
 
     File file = SD.open("/loggedData.txt");

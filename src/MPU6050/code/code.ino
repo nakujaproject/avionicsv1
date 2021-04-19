@@ -2,6 +2,10 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
+#define I2C_SDA 4
+#define I2C_SCL 15
+
+TwoWire I2CMPU = TwoWire(0);
 Adafruit_MPU6050 mpu;
 
 void setup(void) {
@@ -12,7 +16,7 @@ void setup(void) {
   Serial.println("Adafruit MPU6050 test!");
 
   // Try to initialize!
-  if (!mpu.begin()) {
+  if (!I2CMPU.begin(I2C_SDA, I2C_SCL)) {
     Serial.println("Failed to find MPU6050 chip");
     while (1) {
       delay(10);
