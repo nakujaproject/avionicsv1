@@ -86,7 +86,7 @@ void startWriting(fs::FS &fs);
 
 void setup() {
     Serial.begin(115200);
-    servo.attach(32);
+    servo.attach(16);
     delay(2000);
     init_components();
     servo.write(0);
@@ -129,23 +129,32 @@ void loop() {
   detectLiftOff(s);
   detectApogee1(s);
   detectApogee2(v, duration);
-  detectApogee3(ac, duration);
+  //detectApogee3(ac, duration);
 
   logSDCard();
   counter++;
   Serial.print(altitude);  
   Serial.print(" ");
    Serial.println(s);
-  if ((duration >= 5000) && (state == false)){
+  if (isApogee2 == true && (state == false)){
     servo.write(90);
     Serial.println("Hello");
     state = true;
   }
-  if (duration >= 30000 && (state2 == false)){
+  if ((isApogee1 == true) && (state == false)){
     Serial.println("World");
-    servo.write(0);
-    state2 = true;
+    servo.write(90);
+    state = true;
   }
+
+
+  if ((duration == 30000) && (state == false)){
+    Serial.println("World");
+    servo.write(90);
+    state = true;
+  }
+
+  
   delay(50);
 
 }
@@ -194,19 +203,19 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
 }
 
 void detectLiftOff(float altitude){
+  int alt = (int) altitude;
   if (currentMillis >= 10000){
-  if (liftoffcounter == 3){
+  if (liftoffcounter == 5){
     isLaunch = true;
     startMillis = millis();
-    liftoffAltitude = altitude;
   }
-  if (altitude > prevAltitude ) {
+  if (alt > prevAltitude ) {
     liftoffcounter = liftoffcounter + 1;
   }
   else {
     liftoffcounter = 0;
   }
-  prevAltitude = altitude;
+  prevAltitude = alt;
 }
 }
 
