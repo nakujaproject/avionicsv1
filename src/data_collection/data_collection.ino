@@ -6,11 +6,13 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <BasicLinearAlgebra.h>
+#include <ESP32Servo.h>
 
 using namespace BLA;
 
 Adafruit_BMP085 bmp;
 Adafruit_MPU6050 mpu;
+Servo servo;
 
 #define seaLevelPressure_hPa 1024
 const int SD_CS = 5;
@@ -28,6 +30,8 @@ bool isLaunch = false;
 bool isApogee1 = false;
 bool isApogee2 = false;
 bool isApogee3 = false;
+bool state = false;
+bool state2 = false;
 unsigned long currentMillis, startMillis, duration;
 
 float q = 0.0001;
@@ -82,8 +86,10 @@ void startWriting(fs::FS &fs);
 
 void setup() {
     Serial.begin(115200);
+    servo.attach(32);
     delay(2000);
     init_components();
+    servo.write(0);
     delay(2000);
 }
 
@@ -130,7 +136,16 @@ void loop() {
   Serial.print(altitude);  
   Serial.print(" ");
    Serial.println(s);
-    
+  if ((duration >= 5000) && (state == false)){
+    servo.write(90);
+    Serial.println("Hello");
+    state = true;
+  }
+  if (duration >= 30000 && (state2 == false)){
+    Serial.println("World");
+    servo.write(0);
+    state2 = true;
+  }
   delay(50);
 
 }
