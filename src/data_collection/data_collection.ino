@@ -33,7 +33,7 @@ unsigned long currentMillis, startMillis, duration;
 String dataMessage;
 File dataFile;
 
-float q = 0.0001;
+float q = 0.00013;
 
 // The system dynamics
 BLA::Matrix<3, 3> A = {1.0, 0.1, 0.01,
@@ -50,8 +50,8 @@ BLA::Matrix<3, 3> P = {1, 0, 0,
                        0, 0, 1};
 
 // Measurement error covariance
-BLA::Matrix<2, 2> R = {0.25, 0,
-                       0, 0.888};
+BLA::Matrix<2, 2> R = {0.01, 0,
+                       0, 0.92};
 
 // Process noise covariance
 BLA::Matrix<3, 3> Q = {q, 0, 0,
@@ -71,6 +71,7 @@ BLA::Matrix<2, 1> Y = {0.0,
                        0.0};
 
 TaskHandle_t Task1;
+TaskHandle_t Task2;
 
 void init_components();
 void logSDCard();
@@ -91,16 +92,32 @@ void setup()
     delay(2000);
     init_components();
     delay(2000);
+     
      xTaskCreatePinnedToCore(
-       codeForTask1,
-       "Task_1",
-       4000,
+       Task1code,
+       "Task1",
+       10000,
        NULL,
        1,
        &Task1,
        0);
      delay(500); // needed to start-up task1
+
+    xTaskCreatePinnedToCore(
+       Task2code,
+       "Task2",
+       10000,
+       NULL,
+       1,
+       &Task2,
+       1);
+     delay(500); // needed to start-up task2
 }
+
+
+
+
+
 
 void loop()
 {
@@ -110,10 +127,12 @@ void loop()
 // Write the sensor readings on the SD card
 void logSDCard()
 {
-    dataMessage = String(counter) + "," + String(altitude) + "," + String(s) + "," + String(v) + "," + String(a) + "," + String(ax) + "," + String(ay) + "," + String(az) + "," + String(isLaunch) + "," + String(isApogee1) + "," + String(isApogee2) + "," + String(isApogee3) + ","
-                                                                                                                                                                                                                                                                                   "\r\n";
-    Serial.print("Save data: ");
+    dataMessage = String(counter) + "," + String(altitude) + "," + String(s) + "," + String(v) + "," + String(a) + "," + String(ax) + "," + String(ay) + "," + String(az) + "," + String(isLaunch) + "," + String(isApogee1) + "," + String(isApogee2) + "," + String(isApogee3) + ".";
+    //Serial.print("Save data: ");
     Serial.println(dataMessage);
+//    Serial.print(altitude);
+//    Serial.print(", ");
+//    Serial.println(s);
     appendFile(dataMessage.c_str());
 }
 
@@ -148,7 +167,7 @@ void appendFile(const char *message)
     }
     if (dataFile.println(message))
     {
-        Serial.println("Message appended");
+        //Serial.println("Message appended" "\r\n");
     }
     else
     {
@@ -172,9 +191,10 @@ void startWriting()
     }
 }
 
-void detectLiftOff(float altitude)
+void detectLiftOff(float alt)
 {
-    int alt = (int)altitude;
+    //int alt = (int)altitude;
+    
     if (currentMillis >= 10000)
     {
         if (liftoffcounter == 5)
@@ -182,7 +202,7 @@ void detectLiftOff(float altitude)
             isLaunch = true;
             startMillis = millis();
         }
-        if (alt > prevAltitude)
+        if ((alt - prevAltitude)>0.5)
         {
             liftoffcounter = liftoffcounter + 1;
         }
@@ -190,6 +210,7 @@ void detectLiftOff(float altitude)
         {
             liftoffcounter = 0;
         }
+        Serial.println(liftoffcounter);
         prevAltitude = alt;
     }
 }
@@ -200,21 +221,19 @@ void detectApogee1(float altitude)
     {
         if (isApogee1 == false)
         {
-            if (altitude > liftoffAltitude)
-            {
-                if (apogeeCounter == 3)
-                {
+            if (apogeeCounter == 3)
+             {
                     isApogee1 = true;
                 }
-                if (altitude < prevAltitude)
+                if ((prevAltitude - altitude) > 0.1)
                 {
                     apogeeCounter = apogeeCounter + 1;
-                }
+                  }
                 else
                 {
                     apogeeCounter = 0;
                 }
-            }
+            
             prevAltitude = altitude;
         }
     }
@@ -378,29 +397,54 @@ void kalmanUpdate()
 //  }
 // }
 
-void codeForTask1(void *parameter)
+long time4 = 0;
+long samptime;
+void Task1code(void * pvParameters)
 {
     for (;;)
     {
-        Serial.print("This Task runs on Core: ");
-        Serial.println(xPortGetCoreID());
+        //Serial.print("This Task runs on Core: ");
+        //Serial.println(xPortGetCoreID());
 
-        currentMillis = millis();
+//        currentMillis = millis();
+//        samptime = currentMillis - time4;
+//        Serial.println(samptime);
+//        time4 = currentMillis;
+        
         get_readings();
 
-        kalmanUpdate();
+        
+           
+        
 
-        duration = currentMillis - startMillis;
-
-        detectLiftOff(s);
-        detectApogee1(s);
-        detectApogee2(v, duration);
-        detectApogee3(a, duration);
-
-        logSDCard();
-        counter++;
-        deploy_parachute();
-
-        delay(50);
+        delay(5);
     }
+}
+long time5 = 0;
+long samptime5;
+long currentMillis2;
+
+void Task2code( void * pvParameters ){
+  //Serial.print("Task12 running on core ");
+  //Serial.println(xPortGetCoreID());
+
+  for(;;){
+    currentMillis2 = millis();
+        samptime5 = currentMillis2 - time5;
+        Serial.println(samptime5);
+        time5 = currentMillis2;
+//     
+    kalmanUpdate();
+    duration = currentMillis - startMillis;
+
+    detectLiftOff(s);
+    detectApogee1(s);
+    //detectApogee2(v, duration);
+    //detectApogee3(a, duration);
+    deploy_parachute();
+    counter++;
+    logSDCard();
+
+    delay(22);
+  }
 }
