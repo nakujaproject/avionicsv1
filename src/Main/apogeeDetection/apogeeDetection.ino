@@ -85,41 +85,36 @@ void deploy_parachute();
 void get_readings();
 void kalmanUpdate();
 
+TaskHandle_t Task1, Task2;
+
 void setup()
 {
     Serial.begin(115200);
     delay(2000);
     init_components();
     delay(2000);
-     xTaskCreatePinnedToCore(
-       codeForTask1,
-       "Task_1",
-       4000,
-       NULL,
-       1,
-       &Task1,
-       1);
-     delay(500); // needed to start-up task1
+    xTaskCreatePinnedToCore(
+        codeForTask0,
+        "led1Task",
+        2000,
+        NULL,
+        1,
+        &Task1,
+        0);
+    delay(500); // needed to start-up task1
+
+    xTaskCreatePinnedToCore(
+        codeForTask1,
+        "led2Task",
+        2000,
+        NULL,
+        1,
+        &Task2,
+        1);
 }
 
 void loop()
 {
-    // currentMillis = millis();
-    // get_readings();
-
-    // kalmanUpdate();
-
-    // duration = currentMillis - startMillis;
-
-    // detectLiftOff(s);
-    // detectApogee1(s);
-    // detectApogee2(v, duration);
-    // detectApogee3(a, duration);
-
-    // logSDCard();
-    // counter++;
-    // deploy_parachute();
-
     delay(50);
 }
 
@@ -380,31 +375,12 @@ void kalmanUpdate()
     a = x_hat(2);
 }
 
-// void codeForTask1(void *parameter)
-// {
-//  for (;;)
-//  {
-//    xSemaphoreTake(baton, portMAX_DELAY);
-//    // blink(LED1, 1000);
-//    xSemaphoreGive(baton);
-//    delay(50);
-//    Serial.print("Counter in Task 1: ");
-//    Serial.println(counter);
-//    counter++;
-//  }
-// }
-
-void codeForTask1(void *parameter)
+void codeForTask0(void *parameter)
 {
     for (;;)
     {
         Serial.print("This Task runs on Core: ");
         Serial.println(xPortGetCoreID());
-
-        currentMillis = millis();
-        get_readings();
-
-        kalmanUpdate();
 
         duration = currentMillis - startMillis;
 
@@ -416,7 +392,20 @@ void codeForTask1(void *parameter)
         logSDCard();
         counter++;
         deploy_parachute();
+        delay(50);
+    }
+}
 
+void codeForTask1(void *parameter)
+{
+    for (;;)
+    {
+        Serial.print("This Task runs on Core: ");
+        Serial.println(xPortGetCoreID());
+
+        currentMillis = millis();
+        get_readings();
+        kalmanUpdate();
         delay(50);
     }
 }
