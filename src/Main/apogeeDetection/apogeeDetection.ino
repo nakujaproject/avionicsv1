@@ -70,8 +70,6 @@ BLA::Matrix<3, 1> x_hat = {1550.0,
 BLA::Matrix<2, 1> Y = {0.0,
                        0.0};
 
-TaskHandle_t Task1;
-
 void init_components();
 void logSDCard();
 void writeFile(const char *path, const char *message);
