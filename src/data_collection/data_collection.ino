@@ -1,4 +1,4 @@
-#include <SPI.h>
+   #include <SPI.h>
 #include <mySD.h>
 #include <Wire.h>
 #include <Adafruit_BMP085.h>
@@ -19,7 +19,7 @@ int counter = 0;
 float altitude, velocity, acceleration, ax, ay, az, kalmanAltitude;
 float liftoffAltitude, apogeeAltitude;
 float s, v, a, reac, res;
-int prevAltitude = 2000;
+float prevAltitude = 0;
 int apogeeCounter = 0;
 int liftoffcounter = 0;
 bool isLaunch = false;
@@ -121,14 +121,14 @@ void setup()
 
 void loop()
 {
-    delay(50);
+//    delay(50);
 }
 
 // Write the sensor readings on the SD card
 void logSDCard()
 {
     dataMessage = String(counter) + "," + String(altitude) + "," + String(s) + "," + String(v) + "," + String(a) + "," + String(ax) + "," + String(ay) + "," + String(az) + "," + String(isLaunch) + "," + String(isApogee1) + "," + String(isApogee2) + "," + String(isApogee3) + ".";
-    //Serial.print("Save data: ");
+    Serial.print("Save data: ");
     Serial.println(dataMessage);
 //    Serial.print(altitude);
 //    Serial.print(", ");
@@ -167,7 +167,7 @@ void appendFile(const char *message)
     }
     if (dataFile.println(message))
     {
-        //Serial.println("Message appended" "\r\n");
+        Serial.println("Message appended" "\r\n");
     }
     else
     {
@@ -195,14 +195,14 @@ void detectLiftOff(float alt)
 {
     //int alt = (int)altitude;
     
-    if (currentMillis >= 10000)
-    {
+
         if (liftoffcounter == 5)
         {
             isLaunch = true;
             startMillis = millis();
         }
-        if ((alt - prevAltitude)>0.5)
+        Serial.println(alt - prevAltitude);
+        if ((alt - prevAltitude)>0.1)
         {
             liftoffcounter = liftoffcounter + 1;
         }
@@ -212,10 +212,10 @@ void detectLiftOff(float alt)
         }
         Serial.println(liftoffcounter);
         prevAltitude = alt;
-    }
+    
 }
 
-void detectApogee1(float altitude)
+void detectApogee1(float alt)
 {
     if (isLaunch == true)
     {
@@ -225,7 +225,7 @@ void detectApogee1(float altitude)
              {
                     isApogee1 = true;
                 }
-                if ((prevAltitude - altitude) > 0.1)
+                if ((prevAltitude - alt) > 0.1)
                 {
                     apogeeCounter = apogeeCounter + 1;
                   }
@@ -234,7 +234,7 @@ void detectApogee1(float altitude)
                     apogeeCounter = 0;
                 }
             
-            prevAltitude = altitude;
+            prevAltitude = alt;
         }
     }
 }
@@ -383,22 +383,8 @@ void kalmanUpdate()
     a = x_hat(2);
 }
 
-// void codeForTask1(void *parameter)
-// {
-//  for (;;)
-//  {
-//    xSemaphoreTake(baton, portMAX_DELAY);
-//    // blink(LED1, 1000);
-//    xSemaphoreGive(baton);
-//    delay(50);
-//    Serial.print("Counter in Task 1: ");
-//    Serial.println(counter);
-//    counter++;
-//  }
-// }
 
-long time4 = 0;
-long samptime;
+
 void Task1code(void * pvParameters)
 {
     for (;;)
@@ -406,10 +392,7 @@ void Task1code(void * pvParameters)
         //Serial.print("This Task runs on Core: ");
         //Serial.println(xPortGetCoreID());
 
-//        currentMillis = millis();
-//        samptime = currentMillis - time4;
-//        Serial.println(samptime);
-//        time4 = currentMillis;
+
         
         get_readings();
 
@@ -417,26 +400,21 @@ void Task1code(void * pvParameters)
            
         
 
-        delay(5);
+       // delay(5);
     }
 }
-long time5 = 0;
-long samptime5;
-long currentMillis2;
+
 
 void Task2code( void * pvParameters ){
   //Serial.print("Task12 running on core ");
   //Serial.println(xPortGetCoreID());
 
   for(;;){
-    currentMillis2 = millis();
-        samptime5 = currentMillis2 - time5;
-        Serial.println(samptime5);
-        time5 = currentMillis2;
-//     
+
+  //     
     kalmanUpdate();
     duration = currentMillis - startMillis;
-
+    digitalWrite(18, HIGH);
     detectLiftOff(s);
     detectApogee1(s);
     //detectApogee2(v, duration);
@@ -445,6 +423,6 @@ void Task2code( void * pvParameters ){
     counter++;
     logSDCard();
 
-    delay(22);
+    //delay(22);
   }
 }
