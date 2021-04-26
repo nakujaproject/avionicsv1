@@ -1,4 +1,4 @@
-   #include <SPI.h>
+#include <SPI.h>
 #include <mySD.h>
 #include <Wire.h>
 #include <Adafruit_BMP085.h>
@@ -92,36 +92,31 @@ void setup()
     delay(2000);
     init_components();
     delay(2000);
-     
-     xTaskCreatePinnedToCore(
-       Task1code,
-       "Task1",
-       10000,
-       NULL,
-       1,
-       &Task1,
-       0);
-     delay(500); // needed to start-up task1
 
     xTaskCreatePinnedToCore(
-       Task2code,
-       "Task2",
-       10000,
-       NULL,
-       1,
-       &Task2,
-       1);
-     delay(500); // needed to start-up task2
+        Task1code,
+        "Task1",
+        10000,
+        NULL,
+        1,
+        &Task1,
+        0);
+    delay(500); // needed to start-up task1
+
+    xTaskCreatePinnedToCore(
+        Task2code,
+        "Task2",
+        10000,
+        NULL,
+        1,
+        &Task2,
+        1);
+    delay(500); // needed to start-up task2
 }
-
-
-
-
-
 
 void loop()
 {
-//    delay(50);
+    //    delay(50);
 }
 
 // Write the sensor readings on the SD card
@@ -130,9 +125,6 @@ void logSDCard()
     dataMessage = String(counter) + "," + String(altitude) + "," + String(s) + "," + String(v) + "," + String(a) + "," + String(ax) + "," + String(ay) + "," + String(az) + "," + String(isLaunch) + "," + String(isApogee1) + "," + String(isApogee2) + "," + String(isApogee3) + ".";
     Serial.print("Save data: ");
     Serial.println(dataMessage);
-//    Serial.print(altitude);
-//    Serial.print(", ");
-//    Serial.println(s);
     appendFile(dataMessage.c_str());
 }
 
@@ -167,7 +159,8 @@ void appendFile(const char *message)
     }
     if (dataFile.println(message))
     {
-        Serial.println("Message appended" "\r\n");
+        Serial.println("Message appended"
+                       "\r\n");
     }
     else
     {
@@ -193,26 +186,22 @@ void startWriting()
 
 void detectLiftOff(float alt)
 {
-    //int alt = (int)altitude;
-    
-
-        if (liftoffcounter == 5)
-        {
-            isLaunch = true;
-            startMillis = millis();
-        }
-        Serial.println(alt - prevAltitude);
-        if ((alt - prevAltitude)>0.1)
-        {
-            liftoffcounter = liftoffcounter + 1;
-        }
-        else
-        {
-            liftoffcounter = 0;
-        }
-        Serial.println(liftoffcounter);
-        prevAltitude = alt;
-    
+    if (liftoffcounter == 5)
+    {
+        isLaunch = true;
+        startMillis = millis();
+    }
+    Serial.println(alt - prevAltitude);
+    if ((alt - prevAltitude) > 0.1)
+    {
+        liftoffcounter = liftoffcounter + 1;
+    }
+    else
+    {
+        liftoffcounter = 0;
+    }
+    Serial.println(liftoffcounter);
+    prevAltitude = alt;
 }
 
 void detectApogee1(float alt)
@@ -222,18 +211,18 @@ void detectApogee1(float alt)
         if (isApogee1 == false)
         {
             if (apogeeCounter == 3)
-             {
-                    isApogee1 = true;
-                }
-                if ((prevAltitude - alt) > 0.1)
-                {
-                    apogeeCounter = apogeeCounter + 1;
-                  }
-                else
-                {
-                    apogeeCounter = 0;
-                }
-            
+            {
+                isApogee1 = true;
+            }
+            if ((prevAltitude - alt) > 0.1)
+            {
+                apogeeCounter = apogeeCounter + 1;
+            }
+            else
+            {
+                apogeeCounter = 0;
+            }
+
             prevAltitude = alt;
         }
     }
@@ -383,46 +372,27 @@ void kalmanUpdate()
     a = x_hat(2);
 }
 
-
-
-void Task1code(void * pvParameters)
+void Task1code(void *pvParameters)
 {
     for (;;)
     {
-        //Serial.print("This Task runs on Core: ");
-        //Serial.println(xPortGetCoreID());
-
-
-        
         get_readings();
-
-        
-           
-        
-
-       // delay(5);
     }
 }
 
-
-void Task2code( void * pvParameters ){
-  //Serial.print("Task12 running on core ");
-  //Serial.println(xPortGetCoreID());
-
-  for(;;){
-
-  //     
-    kalmanUpdate();
-    duration = currentMillis - startMillis;
-    digitalWrite(18, HIGH);
-    detectLiftOff(s);
-    detectApogee1(s);
-    //detectApogee2(v, duration);
-    //detectApogee3(a, duration);
-    deploy_parachute();
-    counter++;
-    logSDCard();
-
-    //delay(22);
-  }
+void Task2code(void *pvParameters)
+{
+    for (;;)
+    {
+        kalmanUpdate();
+        duration = currentMillis - startMillis;
+        digitalWrite(18, HIGH);
+        detectLiftOff(s);
+        detectApogee1(s);
+        //detectApogee2(v, duration);
+        //detectApogee3(a, duration);
+        deploy_parachute();
+        counter++;
+        logSDCard();
+    }
 }
