@@ -41,12 +41,12 @@ unsigned long currentMillis, startMillis, duration;
 
 String dataMessage;
 
-float q = 0.00013;
+float q = 0.0013;
 
 // The system dynamics
 BLA::Matrix<3, 3> A = {1.0, 0.1, 0.005,
                        0, 1.0, 0.1,
-                       0, 0, 1};
+                       0, 0, 1.0};
 
 // Relationship between measurement and states
 BLA::Matrix<2, 3> H = {1.0, 0, 0,
@@ -58,8 +58,8 @@ BLA::Matrix<3, 3> P = {1, 0, 0,
                        0, 0, 1};
 
 // Measurement error covariance
-BLA::Matrix<2, 2> R = {0.01, 0,
-                       0, 0.92};
+BLA::Matrix<2, 2> R = {0.25, 0,
+                       0, 0.75};
 
 // Process noise covariance
 BLA::Matrix<3, 3> Q = {q, 0, 0,
@@ -71,7 +71,7 @@ BLA::Matrix<3, 3> I = {1, 0, 0,
                        0, 1, 0,
                        0, 0, 1};
 
-BLA::Matrix<3, 1> x_hat = {1550.0,
+BLA::Matrix<3, 1> x_hat = {1500.0,
                            0.0,
                            0.0};
 
@@ -117,9 +117,12 @@ void loop()
 void logSDCard()
 {
     dataMessage = String(counter) + "," + String(altitude) + "," + String(s) + "," + String(v) + "," + String(a) + "," + String(ax) + "," + String(ay) + "," + String(az) + "," + String(isLaunch) + "," + String(isApogee1) + "," + String(isApogee2) + "," + String(isApogee3) + ".";
-    Serial.print("Save data: ");
-    Serial.println(dataMessage);
+    //Serial.print("Save data: ");
+    //Serial.println(dataMessage);
     appendFile(dataMessage.c_str());
+    Serial.print(altitude);
+    Serial.print(" , ");
+    Serial.println(s);
 }
 
 // Append data to the SD card (DON'T MODIFY THIS FUNCTION)
@@ -133,7 +136,7 @@ void appendFile(const char *message)
     }
     if (dataFile.println(message))
     {
-        Serial.println("Message appended\n");
+        //Serial.println("Message appended\n");
     }
     else
     {
@@ -164,7 +167,7 @@ void detectLiftOff(float altitude1)
         isLaunch = true;
         startMillis = millis();
     }
-    Serial.println(altitude1 - prevAltitude);
+    //Serial.println(altitude1 - prevAltitude);
     if ((altitude1 - prevAltitude) > LIFTOFF_DEVIATION)
     {
         liftoffcounter += 1;
@@ -173,7 +176,7 @@ void detectLiftOff(float altitude1)
     {
         liftoffcounter = 0;
     }
-    Serial.println(liftoffcounter);
+    //Serial.println(liftoffcounter);
     prevAltitude = altitude1;
 }
 
