@@ -6,6 +6,9 @@
 #include <Adafruit_Sensor.h>
 #include <BasicLinearAlgebra.h>
 #include <ESP32Servo.h>
+#include <ArduinoJson.h>
+#include <HTTPClient.h>
+#include <WiFiMulti.h>
 #include "config.h"
 
 using namespace BLA;
@@ -17,6 +20,10 @@ File dataFile;
 
 TaskHandle_t Task1;
 TaskHandle_t Task2;
+WiFiMulti wifiMulti;
+const char *AP_SSID = WIFI_SSID;
+const char *AP_PWD = WIFI_PASSWORD;
+
 
 float altitude, velocity, acceleration, ax, ay, az, kalmanAltitude;
 float liftoffAltitude, apogeeAltitude;
@@ -83,6 +90,7 @@ void startWriting();
 void deploy_parachute();
 void get_readings();
 void kalmanUpdate();
+void postDataToServer();
 
 void setup()
 {
@@ -96,6 +104,9 @@ void setup()
 
     xTaskCreatePinnedToCore(Task2code, "Task2", 10000, NULL, 1, &Task2, 1);
     delay(SETUP_DELAY);
+    
+    wifiMulti.addAP(AP_SSID, AP_PWD);
+    postDataToServer();
 }
 
 void loop()
@@ -353,5 +364,37 @@ void Task2code(void *pvParameters)
         deploy_parachute();
         counter++;
         logSDCard();
+    }
+}
+
+void postDataToServer()
+{
+
+    Serial.println("Posting JSON data to server...");
+    // Block until we are able to connect to the WiFi access point
+    if (wifiMulti.run() == WL_CONNECTED)
+    {
+
+        HTTPClient http;
+        http.begin(SERVER_POST_URL);
+        http.addHeader("Content-Type", "application/json");
+
+        StaticJsonDocument<200> doc;
+        doc["status"] = "Done";
+
+        String requestBody;
+        serializeJson(doc, requestBody);
+
+        int httpResponseCode = http.POST(requestBody);
+
+        if (httpResponseCode > 0)
+        {
+            String response = http.getString();
+            Serial.println(response);
+        }
+        else
+        {
+            Serial.printf("Error occurred while sending HTTP POST: %s\n", http.errorToString(httpResponseCode).c_str());
+        }
     }
 }

@@ -12,3 +12,6 @@
 #define SERVO_DURATION 3000
 #define SERVO_OPEN_ANGLE 90
 #define BUZZER_PIN 18
+#define WIFI_SSID "Mwesi"
+#define WIFI_PASSWORD "Tembea101"
+#define SERVER_POST_URL "http://98df33f8e2bb.ngrok.io/avionics/init-done"
