@@ -24,7 +24,6 @@ WiFiMulti wifiMulti;
 const char *AP_SSID = WIFI_SSID;
 const char *AP_PWD = WIFI_PASSWORD;
 
-
 float altitude, velocity, acceleration, ax, ay, az, kalmanAltitude;
 float liftoffAltitude, apogeeAltitude;
 float s, v, a;
@@ -104,7 +103,7 @@ void setup()
 
     xTaskCreatePinnedToCore(Task2code, "Task2", 10000, NULL, 1, &Task2, 1);
     delay(SETUP_DELAY);
-    
+
     wifiMulti.addAP(AP_SSID, AP_PWD);
     postDataToServer();
 }

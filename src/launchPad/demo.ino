@@ -14,7 +14,6 @@ void setup()
     delay(4000);
     wifiMulti.addAP(AP_SSID, AP_PWD);
     postDataToServer();
-
 }
 
 void loop()
@@ -55,7 +54,8 @@ void postDataToServer()
     }
 }
 
-void getDataFromServer(){
+void getDataFromServer()
+{
     Serial.println("Getting JSON data from server...");
     // Block until we are able to connect to the WiFi access point
     if (wifiMulti.run() == WL_CONNECTED)
