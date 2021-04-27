@@ -6,20 +6,23 @@
 #include <Adafruit_Sensor.h>
 #include <BasicLinearAlgebra.h>
 #include <ESP32Servo.h>
-
-#define seaLevelPressure_hPa 1024
+#include "config.h"
 
 using namespace BLA;
 
 Adafruit_BMP085 bmp;
 Adafruit_MPU6050 mpu;
 Servo servo;
+File dataFile;
 
-int counter = 0;
+TaskHandle_t Task1;
+TaskHandle_t Task2;
+
 float altitude, velocity, acceleration, ax, ay, az, kalmanAltitude;
 float liftoffAltitude, apogeeAltitude;
-float s, v, a, reac, res;
-float prevAltitude = 0;
+float s, v, a;
+float prevAltitude = 2000;
+int counter = 0;
 int apogeeCounter = 0;
 int liftoffcounter = 0;
 bool isLaunch = false;
@@ -31,7 +34,6 @@ bool state2 = false;
 unsigned long currentMillis, startMillis, duration;
 
 String dataMessage;
-File dataFile;
 
 float q = 0.00013;
 
@@ -70,12 +72,8 @@ BLA::Matrix<3, 1> x_hat = {1550.0,
 BLA::Matrix<2, 1> Y = {0.0,
                        0.0};
 
-TaskHandle_t Task1;
-TaskHandle_t Task2;
-
 void init_components();
 void logSDCard();
-void writeFile(const char *path, const char *message);
 void appendFile(const char *path, const char *message);
 void detectLiftOff(float altitude);
 void detectApogee1(float altitude);
@@ -88,30 +86,16 @@ void kalmanUpdate();
 
 void setup()
 {
-    Serial.begin(115200);
-    delay(2000);
+    Serial.begin(BAUD_RATE);
+    delay(SETUP_DELAY);
     init_components();
-    delay(2000);
+    delay(SETUP_DELAY);
 
-    xTaskCreatePinnedToCore(
-        Task1code,
-        "Task1",
-        10000,
-        NULL,
-        1,
-        &Task1,
-        0);
-    delay(500); // needed to start-up task1
+    xTaskCreatePinnedToCore(Task1code, "Task1", 10000, NULL, 1, &Task1, 0);
+    delay(SETUP_DELAY);
 
-    xTaskCreatePinnedToCore(
-        Task2code,
-        "Task2",
-        10000,
-        NULL,
-        1,
-        &Task2,
-        1);
-    delay(500); // needed to start-up task2
+    xTaskCreatePinnedToCore(Task2code, "Task2", 10000, NULL, 1, &Task2, 1);
+    delay(SETUP_DELAY);
 }
 
 void loop()
@@ -128,30 +112,10 @@ void logSDCard()
     appendFile(dataMessage.c_str());
 }
 
-// Write to the SD card (DON'T MODIFY THIS FUNCTION)
-void writeFile(const char *message)
-{
-    dataFile = SD.open("test2.txt", FILE_WRITE);
-    if (!dataFile)
-    {
-        Serial.println("Failed to open file for writing");
-        return;
-    }
-    if (dataFile.println(message))
-    {
-        Serial.println("File written");
-    }
-    else
-    {
-        Serial.println("Write failed");
-    }
-    dataFile.close();
-}
-
 // Append data to the SD card (DON'T MODIFY THIS FUNCTION)
 void appendFile(const char *message)
 {
-    dataFile = SD.open("test2.txt", FILE_WRITE);
+    dataFile = SD.open(LOG_FILE, FILE_WRITE);
     if (!dataFile)
     {
         Serial.println("Failed to open file for appending");
@@ -159,8 +123,7 @@ void appendFile(const char *message)
     }
     if (dataFile.println(message))
     {
-        Serial.println("Message appended"
-                       "\r\n");
+        Serial.println("Message appended\n");
     }
     else
     {
@@ -171,11 +134,11 @@ void appendFile(const char *message)
 
 void startWriting()
 {
-    dataFile = SD.open("test2.txt", FILE_WRITE);
+    dataFile = SD.open(LOG_FILE, FILE_WRITE);
     if (dataFile)
     {
         Serial.println("Start writing to test2");
-        dataFile.println("Index, Altitude, kalmanAltitude, kalmanVelocity, kalmanAcceleration, ax, ay, az, res, reac, isApogee1, isApogee2, isApogee3  \r\n");
+        dataFile.println("Index, Altitude, kalmanAltitude, kalmanVelocity, kalmanAcceleration, ax, ay, az, isLaunch, isApogee1, isApogee2, isApogee3  \r\n");
         dataFile.close();
     }
     else
@@ -184,59 +147,59 @@ void startWriting()
     }
 }
 
-void detectLiftOff(float alt)
+void detectLiftOff(float altitude1)
 {
-    if (liftoffcounter == 5)
+    if (liftoffcounter == MAX_LIFTOFF_COUNTER)
     {
         isLaunch = true;
         startMillis = millis();
     }
-    Serial.println(alt - prevAltitude);
-    if ((alt - prevAltitude) > 0.1)
+    Serial.println(altitude1 - prevAltitude);
+    if ((altitude1 - prevAltitude) > LIFTOFF_DEVIATION)
     {
-        liftoffcounter = liftoffcounter + 1;
+        liftoffcounter += 1;
     }
     else
     {
         liftoffcounter = 0;
     }
     Serial.println(liftoffcounter);
-    prevAltitude = alt;
+    prevAltitude = altitude1;
 }
 
-void detectApogee1(float alt)
+void detectApogee1(float altitude2)
 {
     if (isLaunch == true)
     {
         if (isApogee1 == false)
         {
-            if (apogeeCounter == 3)
+            if (apogeeCounter == MAX_APOGEE_COUNTER)
             {
                 isApogee1 = true;
             }
-            if ((prevAltitude - alt) > 0.1)
+            if ((prevAltitude - altitude2) > APOGEE_DEVIATION)
             {
-                apogeeCounter = apogeeCounter + 1;
+                apogeeCounter += 1;
             }
             else
             {
                 apogeeCounter = 0;
             }
 
-            prevAltitude = alt;
+            prevAltitude = altitude2;
         }
     }
 }
 
-void detectApogee2(float velocity, long time)
+void detectApogee2(float velocity1, long time1)
 {
     if (isLaunch == true)
     {
         if (isApogee2 == false)
         {
-            if (time > 2000)
+            if (time1 > TIME_TO_CHECK_APOGEE)
             {
-                if ((velocity <= 1) && (velocity >= -1))
+                if ((velocity1 <= 1) && (velocity1 >= -1))
                 {
                     isApogee2 = true;
                 }
@@ -245,15 +208,15 @@ void detectApogee2(float velocity, long time)
     }
 }
 
-void detectApogee3(float acceleration, long time)
+void detectApogee3(float acceleration1, long time2)
 {
     if (isLaunch == true)
     {
         if (isApogee3 == false)
         {
-            if (time >= 2000)
+            if (time2 >= TIME_TO_CHECK_APOGEE)
             {
-                if ((acceleration <= 1) && (acceleration >= -1))
+                if ((acceleration1 <= 1) && (acceleration1 >= -1))
                 {
                     isApogee3 = true;
                 }
@@ -270,7 +233,7 @@ void init_components()
         Serial.println("Could not find a valid BMP085 sensor, check wiring!");
         while (1)
         {
-            delay(10);
+            delay(SHORT_DELAY);
         }
     }
     Serial.println("BMP180 Found!");
@@ -278,24 +241,22 @@ void init_components()
     Serial.println("MPU6050 test!");
     if (!mpu.begin())
     {
-        Serial.println("Failed to find MPU6050 chip");
+        Serial.println("Could not find a valid MPU6050 sensor, check wiring!");
         while (1)
         {
-            delay(10);
+            delay(SHORT_DELAY);
         }
     }
     Serial.println("MPU6050 Found!");
 
     Serial.print("\nInitializing SD card...");
-    // we'll use the initialization code from the utility libraries
-    // since we're just testing if the card is working!
     pinMode(SS, OUTPUT);
     if (!SD.begin(12, 27, 26, 14))
     {
         Serial.println("initialization failed.");
         while (1)
         {
-            delay(10);
+            delay(SHORT_DELAY);
         }
     }
     else
@@ -303,6 +264,7 @@ void init_components()
         Serial.println("Wiring is correct and a card is present.");
     }
     Serial.println("initialization done.");
+
     startWriting();
 
     mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
@@ -310,7 +272,7 @@ void init_components()
     mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
     Serial.println("Servo test!");
 
-    servo.attach(16);
+    servo.attach(SERVO_PIN);
     servo.write(0);
     Serial.println("Servo Initialization done!");
 }
@@ -319,21 +281,18 @@ void deploy_parachute()
 {
     if (isApogee2 == true && (state == false))
     {
-        servo.write(90);
-        Serial.println("Hello");
+        servo.write(SERVO_OPEN_ANGLE);
         state = true;
     }
     if ((isApogee1 == true) && (state == false))
     {
-        Serial.println("World");
-        servo.write(90);
+        servo.write(SERVO_OPEN_ANGLE);
         state = true;
     }
 
-    if ((duration == 30000) && (state == false))
+    if ((duration == SERVO_DURATION) && (state == false))
     {
-        Serial.println("World");
-        servo.write(90);
+        servo.write(SERVO_OPEN_ANGLE);
         state = true;
     }
 }
@@ -342,10 +301,10 @@ void get_readings()
 {
     sensors_event_t a, g, temp;
     mpu.getEvent(&a, &g, &temp);
-    altitude = bmp.readAltitude(seaLevelPressure_hPa * 100);
+    altitude = bmp.readAltitude(SEA_LEVEL_PRESSURE);
     ax = a.acceleration.x;
     ay = a.acceleration.y;
-    az = -1 * a.acceleration.z;
+    az = a.acceleration.z;
 }
 
 void kalmanUpdate()
@@ -386,7 +345,7 @@ void Task2code(void *pvParameters)
     {
         kalmanUpdate();
         duration = currentMillis - startMillis;
-        digitalWrite(18, HIGH);
+        digitalWrite(BUZZER_PIN, HIGH);
         detectLiftOff(s);
         detectApogee1(s);
         //detectApogee2(v, duration);
