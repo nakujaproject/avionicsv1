@@ -44,7 +44,7 @@ String dataMessage;
 float q = 0.00013;
 
 // The system dynamics
-BLA::Matrix<3, 3> A = {1.0, 0.1, 0.01,
+BLA::Matrix<3, 3> A = {1.0, 0.1, 0.005,
                        0, 1.0, 0.1,
                        0, 0, 1};
 
