@@ -1,4 +1,4 @@
-#define SERVO_PIN 18
+#define SERVO_PIN 17
 #define SEA_LEVEL_PRESSURE 102400
 #define BAUD_RATE 115200
 #define SETUP_DELAY 1000
@@ -12,6 +12,6 @@
 #define SERVO_DURATION 3000
 #define SERVO_OPEN_ANGLE 90
 #define BUZZER_PIN 18
-#define WIFI_SSID "Mwesi"
-#define WIFI_PASSWORD "Tembea101"
+#define WIFI_SSID "Gakibia hostel"
+#define WIFI_PASSWORD "emmakim1"
 #define SERVER_POST_URL "http://98df33f8e2bb.ngrok.io/avionics/init-done"
