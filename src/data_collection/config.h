@@ -14,5 +14,5 @@
 #define BUZZER_PIN 19
 #define WIFI_SSID "Gakibia hostel"
 #define WIFI_PASSWORD "emmakim1"
-#define SERVER_POST_URL "http://0db108b6683b.ngrok.io/avionics/init-done"
-#define SERVER_GET_URL "http://0db108b6683b.ngrok.io/avionics/start-logging"
+#define SERVER_POST_URL "http://115ffa38644d.ngrok.io/avionics/init-done"
+#define SERVER_GET_URL "http://115ffa38644d.ngrok.io/avionics/start-logging"

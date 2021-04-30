@@ -2,8 +2,8 @@
 #include <HTTPClient.h>
 #include <WiFiMulti.h>
 
-const char *AP_SSID = "Mwesi";
-const char *AP_PWD = "Tembea101";
+const char *AP_SSID = "Gakibia hostel";
+const char *AP_PWD = "emmakim1";
 
 WiFiMulti wifiMulti;
 
@@ -31,7 +31,7 @@ void postDataToServer()
     {
 
         HTTPClient http;
-        http.begin("http://98df33f8e2bb.ngrok.io/avionics/init-done");
+        http.begin("http://0db108b6683b.ngrok.io/avionics/init-done");
         http.addHeader("Content-Type", "application/json");
 
         StaticJsonDocument<200> doc;
@@ -61,14 +61,19 @@ void getDataFromServer()
     if (wifiMulti.run() == WL_CONNECTED)
     {
         HTTPClient http;
-        http.begin("http://98df33f8e2bb.ngrok.io/avionics/start-logging");
+        http.begin("http://0db108b6683b.ngrok.io/avionics/start-logging");
         http.GET();
 
         DynamicJsonDocument doc(2048);
         deserializeJson(doc, http.getStream());
-
-        Serial.println(doc["status"].as<String>());
-
+        int retMess = doc["status"];
+        Serial.println(retMess);
+                if (doc["status"] == 1){
+                  Serial.println("Hello");
+        }
+        else {
+          Serial.println("World");
+          }
         http.end();
     }
 }
