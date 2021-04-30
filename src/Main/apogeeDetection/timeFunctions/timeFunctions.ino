@@ -19,7 +19,7 @@ int counter = 0;
 float altitude, velocity, acceleration, ax, ay, az, kalmanAltitude;
 float liftoffAltitude, apogeeAltitude;
 float s, v, a, reac, res;
-int prevAltitude = 2000;
+float prevAltitude = 0;
 int apogeeCounter = 0;
 int liftoffcounter = 0;
 bool isLaunch = false;
@@ -83,37 +83,74 @@ void deploy_parachute();
 void get_readings();
 void kalmanUpdate();
 
-TaskHandle_t Task1, Task2;
-
 void setup()
 {
     Serial.begin(115200);
     delay(2000);
     init_components();
     delay(2000);
-    xTaskCreatePinnedToCore(
-        codeForTask0,
-        "led1Task",
-        2000,
-        NULL,
-        1,
-        &Task1,
-        0);
-    delay(500); // needed to start-up task1
-
-    xTaskCreatePinnedToCore(
-        codeForTask1,
-        "led2Task",
-        2000,
-        NULL,
-        1,
-        &Task2,
-        1);
+    startMillis = millis();
 }
 
 void loop()
 {
-    delay(50);
+        get_readings();
+        currentMillis = millis();
+        duration = currentMillis - startMillis;
+        Serial.print(duration);
+        Serial.print(",");
+        
+        startMillis = millis();
+        kalmanUpdate();
+        currentMillis = millis();
+        duration = currentMillis - startMillis;
+        Serial.print(duration);
+        Serial.print(",");        
+        
+        startMillis = currentMillis;
+        detectLiftOff(s);
+        currentMillis = millis();
+        duration = currentMillis - startMillis;
+        Serial.print(duration);
+        Serial.print(",");
+        
+        startMillis = currentMillis;
+        detectApogee1(s);
+        currentMillis = millis();
+        duration = currentMillis - startMillis;
+        Serial.print(duration);
+        Serial.print(",");
+        
+        startMillis = currentMillis;
+        detectApogee2(v, duration);
+        currentMillis = millis();
+        duration = currentMillis - startMillis;
+        Serial.print(duration);
+        Serial.print(",");
+        
+        startMillis = currentMillis;
+        detectApogee3(a, duration);
+        currentMillis = millis();
+        duration = currentMillis - startMillis;
+        Serial.print(duration);
+        Serial.print(",");
+        
+        startMillis = currentMillis;
+        deploy_parachute();
+        currentMillis = millis();
+        duration = currentMillis - startMillis;
+        Serial.print(duration);
+        Serial.print(",");
+        
+        startMillis = currentMillis;
+        logSDCard();
+        currentMillis = millis();
+        duration = currentMillis - startMillis;
+        Serial.print(duration);
+
+        
+        startMillis = currentMillis;Serial.println("");
+        counter++;
 }
 
 // Write the sensor readings on the SD card
@@ -121,8 +158,8 @@ void logSDCard()
 {
     dataMessage = String(counter) + "," + String(altitude) + "," + String(s) + "," + String(v) + "," + String(a) + "," + String(ax) + "," + String(ay) + "," + String(az) + "," + String(isLaunch) + "," + String(isApogee1) + "," + String(isApogee2) + "," + String(isApogee3) + ","
                                                                                                                                                                                                                                                                                    "\r\n";
-    Serial.print("Save data: ");
-    Serial.println(dataMessage);
+    // Serial.print("Save data: ");
+    // Serial.println(dataMessage);
     appendFile(dataMessage.c_str());
 }
 
@@ -157,7 +194,7 @@ void appendFile(const char *message)
     }
     if (dataFile.println(message))
     {
-        Serial.println("Message appended");
+        // Serial.println("Message appended");
     }
     else
     {
@@ -181,17 +218,16 @@ void startWriting()
     }
 }
 
-void detectLiftOff(float altitude)
+void detectLiftOff(float alt)
 {
-    int alt = (int)altitude;
-    if (currentMillis >= 10000)
-    {
+    
+    
         if (liftoffcounter == 5)
         {
             isLaunch = true;
             startMillis = millis();
         }
-        if (alt > prevAltitude)
+        if ((alt - prevAltitude)>0.1)
         {
             liftoffcounter = liftoffcounter + 1;
         }
@@ -201,21 +237,19 @@ void detectLiftOff(float altitude)
         }
         prevAltitude = alt;
     }
-}
 
-void detectApogee1(float altitude)
+
+void detectApogee1(float alt)
 {
     if (isLaunch == true)
     {
         if (isApogee1 == false)
         {
-            if (altitude > liftoffAltitude)
-            {
                 if (apogeeCounter == 3)
                 {
                     isApogee1 = true;
                 }
-                if (altitude < prevAltitude)
+                if ((prevAltitude - alt) > 0.1)
                 {
                     apogeeCounter = apogeeCounter + 1;
                 }
@@ -223,8 +257,8 @@ void detectApogee1(float altitude)
                 {
                     apogeeCounter = 0;
                 }
-            }
-            prevAltitude = altitude;
+            
+            prevAltitude = alt;
         }
     }
 }
@@ -371,39 +405,4 @@ void kalmanUpdate()
     s = x_hat(0);
     v = x_hat(1);
     a = x_hat(2);
-}
-
-void codeForTask0(void *parameter)
-{
-    for (;;)
-    {
-        Serial.print("This Task runs on Core: ");
-        Serial.println(xPortGetCoreID());
-
-        duration = currentMillis - startMillis;
-
-        detectLiftOff(s);
-        detectApogee1(s);
-        detectApogee2(v, duration);
-        detectApogee3(a, duration);
-
-        logSDCard();
-        counter++;
-        deploy_parachute();
-        delay(50);
-    }
-}
-
-void codeForTask1(void *parameter)
-{
-    for (;;)
-    {
-        Serial.print("This Task runs on Core: ");
-        Serial.println(xPortGetCoreID());
-
-        currentMillis = millis();
-        get_readings();
-        kalmanUpdate();
-        delay(50);
-    }
 }
