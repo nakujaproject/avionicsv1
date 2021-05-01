@@ -12,7 +12,7 @@
 #define SERVO_DURATION 3000
 #define SERVO_OPEN_ANGLE 90
 #define BUZZER_PIN 19
-#define WIFI_SSID "Gakibia hostel"
-#define WIFI_PASSWORD "emmakim1"
+#define ssid "Gakibia hostel"
+#define password "emmakim1"
 #define SERVER_POST_URL "http://a8afcc2c3d23.ngrok.io/avionics/init-done"
 #define SERVER_GET_URL "http://a8afcc2c3d23.ngrok.io/avionics/start-logging"
