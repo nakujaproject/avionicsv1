@@ -5,7 +5,7 @@ app = Flask(__name__)
 @app.route('/avionics/start-logging', methods = ['GET'])
 def get_tasks():
     response = {
-        "status": "Start"
+        "status": 1
     }
     return jsonify(response)
 
