@@ -6,6 +6,7 @@
 #include <Adafruit_Sensor.h>
 #include <BasicLinearAlgebra.h>
 #include <ESP32Servo.h>
+#include"config.h"
 
 #define seaLevelPressure_hPa 1024
 
